@@ -6,15 +6,11 @@
 // Assigned By : Sir Zaheer
 //*********************************************/
 
-//Accquring The Required GrapHQl datatypes 
+//Accquring The Required GrapHQl datatypes
 const {
-  GraphQLSchema,
   GraphQLObjectType,
-  GraphQLString,
   GraphQLList,
   GraphQLInt,
-  GraphQLNonNull,
-  GraphQLID,
 } = require("graphql");
 
 //Acquiring required  Models of MongoDB
@@ -23,15 +19,17 @@ const Assign_Project = require("../models/assign_project_model");
 const User = require("../models/user_model");
 const Project_Weekly = require("../models/Assign_by_Week_model");
 
-
 //Acquiring required  GraphQL Schema
 const ProjectsType = require("../GraphQlSchemas/ProjectType");
 const AssignProjectType = require("../GraphQlSchemas/AssignProjectType");
 const AssignByWeekType = require("../GraphQlSchemas/AssignByWeekType");
 
+//Root Query
 const RootQuery = new GraphQLObjectType({
   name: "RootQueryType",
   fields: () => ({
+    //Querying All Projects
+
     projects: {
       type: new GraphQLList(ProjectsType),
       description: "List of all projects",
@@ -40,6 +38,8 @@ const RootQuery = new GraphQLObjectType({
         return projects;
       },
     },
+    //Querying All Assigned Projects
+
     assignList: {
       type: new GraphQLList(AssignProjectType),
       description: "List of all Assigned Projects",
@@ -48,6 +48,7 @@ const RootQuery = new GraphQLObjectType({
         return assignProjects;
       },
     },
+    //Querying All Assigned By Week
     projectList: {
       type: new GraphQLList(ProjectsType),
       description: "List of all projects with same week",

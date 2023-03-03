@@ -32,6 +32,8 @@ const AssignProjectType = require("../GraphQlSchemas/AssignProjectType");
 const AssignByWeekType = require("../GraphQlSchemas/AssignByWeekType");
 const UserType = require("../GraphQlSchemas/UserType");
 
+
+//All The Mutations are Defined Here
 const Mutation = new GraphQLObjectType({
   name: "mutation",
   fields: {
