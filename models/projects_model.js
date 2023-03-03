@@ -1,5 +1,5 @@
 //*********************************************/
-// Project : Project management Using GraphQl 
+// Project : Project management Using GraphQl
 // Organization : CyberNest
 // Author : Osama Atiq
 // Date : 2023-02-28
@@ -9,17 +9,20 @@
 //Schema Definition Projects
 
 const mongoose = require("mongoose");
-const ProjectModel = mongoose.model("Project", {
+
+const ProjectSchema = new mongoose.Schema({
   Title: String,
   Week: Number,
   Status: String,
   Comment: String,
   Technologies: String,
-  Create_Update_Ts: String,
-  Create_Update: String,
   Lead: String,
   Owner: String,
   Manager: String,
 });
+
+ProjectSchema.set("timestamps", true);
+
+const ProjectModel = mongoose.model("Project", ProjectSchema);
 
 module.exports = ProjectModel;

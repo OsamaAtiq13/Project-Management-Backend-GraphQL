@@ -16,6 +16,9 @@ const {
   GraphQLID,
 } = require("graphql");
 
+//Acquiring  The Validations
+const email_Validation = require("../Validations/Validation");
+
 //Acquiring required  Models of MongoDB
 
 const Project = require("../models/projects_model");
@@ -27,10 +30,105 @@ const Project_Weekly = require("../models/Assign_by_Week_model");
 const ProjectsType = require("../GraphQlSchemas/ProjectType");
 const AssignProjectType = require("../GraphQlSchemas/AssignProjectType");
 const AssignByWeekType = require("../GraphQlSchemas/AssignByWeekType");
+const UserType = require("../GraphQlSchemas/UserType");
 
 const Mutation = new GraphQLObjectType({
   name: "mutation",
   fields: {
+    //Adding a User SubQuery to Add a User
+    addUser: {
+      type: UserType,
+      description: "Adding a User",
+      args: {
+        Name: { type: new GraphQLNonNull(GraphQLString) },
+        Email: { type: new GraphQLNonNull(GraphQLString) },
+        Role: { type: new GraphQLNonNull(GraphQLString) },
+        message: { type: GraphQLString },
+      },
+
+      resolve: async (parent, args) => {
+        console.log(args.Email);
+
+        const existingUser = await User.findOne({ Email: args.Email });
+        if (existingUser) {
+          throw new Error(`User with email ${args.Email} already exists`);
+        } else {
+          if (!email_Validation(args.Email)) {
+            throw new Error(
+              `Email Not Valid. Please Enter Valid Email Address`
+            );
+          }
+          if (args.Role !== "Admin" && args.Role !== "User") {
+            throw new Error(`Please Enter Valid Role`);
+          } else {
+            const newUser = new User({
+              Name: args.Name,
+              Email: args.Email,
+              Role: args.Role,
+            });
+            await newUser.save();
+            return { message: "User Successfully Created" };
+          }
+        }
+      },
+    },
+
+    updateUser: {
+      type: UserType,
+      description: "Updating an existing user",
+      args: {
+        Editor: { type: new GraphQLNonNull(GraphQLString) },
+        ID: { type: new GraphQLNonNull(GraphQLID) },
+        Name: { type: GraphQLString },
+        Email: { type: GraphQLString },
+        Role: { type: GraphQLString },
+        message: { type: GraphQLString },
+      },
+      resolve: async (parent, args, context) => {
+        const Editor = await User.findOne({ Name: args.Editor });
+   
+
+        if(Editor.Role !=="Admin"){
+          throw new Error(`You are not authorized to edit this user`);
+        }
+
+        // Find the user by ID
+        const userToUpdate = await User.findById(args.ID);
+
+        // If user doesn't exist, throw an error
+        if (!userToUpdate) {
+          throw new Error(`User with ID ${args.ID} not found`);
+        }
+
+        // Update the user object with the new values
+        if (args.Name) {
+          userToUpdate.Name = args.Name;
+        }
+        if (args.Email) {
+          if (!email_Validation(args.Email)) {
+            return new Error(
+              `Email Not Valid. Please Enter Valid Email Address`
+            );
+          } else {
+            userToUpdate.Email = args.Email;
+          }
+        }
+        if (args.Role) {
+          if (args.Role !== "Admin" && args.Role !== "User") {
+            return { message: "Please Enter Valid Role" };
+          }
+
+          userToUpdate.Role = args.Role;
+        }
+
+        // Save the updated user to the database
+        await userToUpdate.save();
+
+        // Return the updated user object
+        return { message: "User Updated Successfully" };
+      },
+    },
+
     // Add a  Project Sub Query Starts From Here
     addProject: {
       type: ProjectsType,
@@ -56,10 +154,6 @@ const Mutation = new GraphQLObjectType({
           Comment: args.Comment,
 
           Technologies: args.Technologies,
-
-          Create_Update_Ts: new Date().toISOString(),
-
-          Create_Update: "not Updated Yet",
 
           Lead: args.Lead,
 
@@ -150,7 +244,6 @@ const Mutation = new GraphQLObjectType({
           id,
           {
             ...updates,
-            Create_Update: new Date().toISOString(),
           },
           { new: true }
         );
@@ -227,6 +320,8 @@ const Mutation = new GraphQLObjectType({
         }
       },
     },
+
+    //Edit The Assigned Project Weekly Basis Starts From Here
     EditAssignedProject: {
       type: AssignByWeekType,
       description: "Edit an Assigned Project",
@@ -234,37 +329,39 @@ const Mutation = new GraphQLObjectType({
         id: { type: new GraphQLNonNull(GraphQLID) },
         hours_Planned: { type: GraphQLString },
         hours_Spent: { type: GraphQLString },
-        Week: { type: (GraphQLString) },
+        Week: { type: GraphQLString },
         message: { type: GraphQLString },
       },
       resolve: async (parent, args) => {
         const assignedProject = await Project_Weekly.findById(args.id);
-    
+
         if (!assignedProject) {
           throw new Error(`Assigned Project with ID ${args.id} not found.`);
         }
-    
+
         const user = await User.findById(assignedProject.User_id);
-    
+
         if (!user) {
           throw new Error(`User with ID ${assignedProject.User_id} not found.`);
         }
-    
+
         if (user && user.Role == "Admin") {
-          assignedProject.hours_Planned = args.hours_Planned || assignedProject.hours_Planned;
-          assignedProject.hours_Spent = args.hours_Spent || assignedProject.hours_Spent;
+          assignedProject.hours_Planned =
+            args.hours_Planned || assignedProject.hours_Planned;
+          assignedProject.hours_Spent =
+            args.hours_Spent || assignedProject.hours_Spent;
           assignedProject.message = args.message || assignedProject.message;
-    
+
           await assignedProject.save();
-    
+
           return { message: "Assigned Project Successfully Updated" };
         } else {
-          return { message: "You are Not Authorized to Edit Assigned Projects" };
+          return {
+            message: "You are Not Authorized to Edit Assigned Projects",
+          };
         }
       },
-    }
-    
-    
+    },
   },
 });
 
